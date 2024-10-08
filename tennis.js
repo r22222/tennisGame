@@ -6,7 +6,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.getElementById("game-container").appendChild(renderer.domElement);
 
 // Camera position
-camera.position.set(0, 5, 10);
+camera.position.set(0, 10, 20);
 camera.lookAt(0, 0, 0);
 
 // Lighting
@@ -16,72 +16,159 @@ const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
 directionalLight.position.set(10, 20, 10);
 scene.add(directionalLight);
 
-// Create the court
-const courtGeometry = new THREE.PlaneGeometry(20, 10);
+// Create courts
 const courtMaterial = new THREE.MeshPhongMaterial({ color: 0x228b22 }); // Green court
-const court = new THREE.Mesh(courtGeometry, courtMaterial);
-court.rotation.x = -Math.PI / 2;
-scene.add(court);
+for (let i = -25; i <= 25; i += 25) {
+    const courtGeometry = new THREE.PlaneGeometry(20, 10);
+    const court = new THREE.Mesh(courtGeometry, courtMaterial);
+    court.rotation.x = -Math.PI / 2;
+    court.position.set(i, 0, 0);
+    scene.add(court);
+
+    // Create net
+    const netGeometry = new THREE.BoxGeometry(20, 0.2, 0.1);
+    const netMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff }); // White net
+    const net = new THREE.Mesh(netGeometry, netMaterial);
+    net.position.set(i, 0.75, 0);
+    scene.add(net);
+
+    // Create court lines
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
+    const lineWidth = 0.05;
+
+    // Baseline
+    const baselineGeometry = new THREE.PlaneGeometry(20, lineWidth);
+    const baselineFront = new THREE.Mesh(baselineGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    baselineFront.rotation.x = -Math.PI / 2;
+    baselineFront.position.set(i, 0.01, 5);
+    scene.add(baselineFront);
+    const baselineBack = baselineFront.clone();
+    baselineBack.position.set(i, 0.01, -5);
+    scene.add(baselineBack);
+
+    // Sidelines
+    const sidelineGeometry = new THREE.PlaneGeometry(lineWidth, 10);
+    const sidelineLeft = new THREE.Mesh(sidelineGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    sidelineLeft.rotation.x = -Math.PI / 2;
+    sidelineLeft.position.set(i - 10, 0.01, 0);
+    scene.add(sidelineLeft);
+    const sidelineRight = sidelineLeft.clone();
+    sidelineRight.position.set(i + 10, 0.01, 0);
+    scene.add(sidelineRight);
+
+    // Service lines
+    const serviceLineGeometry = new THREE.PlaneGeometry(20, lineWidth);
+    const serviceLine = new THREE.Mesh(serviceLineGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    serviceLine.rotation.x = -Math.PI / 2;
+    serviceLine.position.set(i, 0.01, 0);
+    scene.add(serviceLine);
+}
 
 // Create boundaries
-const boundaryGeometry = new THREE.BoxGeometry(20.5, 1, 0.5);
 const boundaryMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
-const backBoundary = new THREE.Mesh(boundaryGeometry, boundaryMaterial);
-backBoundary.position.set(0, 0.5, -5.25);
-scene.add(backBoundary);
-const frontBoundary = new THREE.Mesh(boundaryGeometry, boundaryMaterial);
-frontBoundary.position.set(0, 0.5, 5.25);
-scene.add(frontBoundary);
+for (let i = -25; i <= 25; i += 25) {
+    const backBoundary = new THREE.Mesh(new THREE.BoxGeometry(20.5, 1, 0.5), boundaryMaterial);
+    backBoundary.position.set(i, 0.5, -5.25);
+    scene.add(backBoundary);
 
-// Create player
+    const frontBoundary = new THREE.Mesh(new THREE.BoxGeometry(20.5, 1, 0.5), boundaryMaterial);
+    frontBoundary.position.set(i, 0.5, 5.25);
+    scene.add(frontBoundary);
+}
+
+// Create players and opponents
 const playerGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
 const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff }); // Blue player
-const player = new THREE.Mesh(playerGeometry, playerMaterial);
-player.position.set(0, 0.75, -3);
-scene.add(player);
+const players = [];
+for (let i = -25; i <= 25; i += 25) {
+    const player = new THREE.Mesh(playerGeometry, playerMaterial);
+    player.position.set(i, 0.75, -3);
+    scene.add(player);
+    players.push(player);
+}
+const mainPlayer = players[1]; // Controlled by user
 
-// Create opponents
-const opponentGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
 const opponentMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 }); // Red opponent
-const opponent1 = new THREE.Mesh(opponentGeometry, opponentMaterial);
-opponent1.position.set(0, 0.75, 3);
-scene.add(opponent1);
+const opponents = [];
+for (let i = -25; i <= 25; i += 25) {
+    const opponent = new THREE.Mesh(playerGeometry, opponentMaterial);
+    opponent.position.set(i, 0.75, 3);
+    scene.add(opponent);
+    opponents.push(opponent);
+}
+
+// Create pros (static position)
+const proMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00 }); // Yellow pro
+const pros = [];
+for (let i = -25; i <= 25; i += 25) {
+    const pro = new THREE.Mesh(playerGeometry, proMaterial);
+    pro.position.set(i, 0.75, 5);
+    scene.add(pro);
+    pros.push(pro);
+}
 
 // Create ball
 const ballGeometry = new THREE.SphereGeometry(0.2, 32, 32);
-const ballMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00 }); // Yellow ball
+const ballMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff }); // White ball
 const ball = new THREE.Mesh(ballGeometry, ballMaterial);
 ball.position.set(0, 0.2, 0);
 scene.add(ball);
 
-// Render loop
-function animate() {
-    requestAnimationFrame(animate);
-    renderer.render(scene, camera);
-}
-animate();
+// Game state
+let gameStarted = false;
+let playerScore = 0;
+let opponentScore = 0;
+let currentCourt = 1;
 
-// Handle player movement
+// Display score and timer
+const scoreElement = document.createElement('div');
+scoreElement.style.position = 'absolute';
+scoreElement.style.top = '10px';
+scoreElement.style.left = '10px';
+scoreElement.style.color = 'white';
+document.body.appendChild(scoreElement);
+
+const timerElement = document.createElement('div');
+timerElement.style.position = 'absolute';
+timerElement.style.top = '40px';
+timerElement.style.left = '10px';
+timerElement.style.color = 'white';
+document.body.appendChild(timerElement);
+
+let startTime = Date.now();
+
+// Press any key to start
 window.addEventListener('keydown', (event) => {
-    switch (event.key) {
-        case 'ArrowLeft':
-            player.position.x -= 0.1;
-            break;
-        case 'ArrowRight':
-            player.position.x += 0.1;
-            break;
-        case 'ArrowUp':
-            player.position.z -= 0.1;
-            break;
-        case 'ArrowDown':
-            player.position.z += 0.1;
-            break;
+    if (!gameStarted) {
+        gameStarted = true;
+        moveBall();
+        moveOpponents();
+        document.getElementById("game-container").focus();
+        startTime = Date.now();
+    } else {
+        // Handle player movement
+        switch (event.key) {
+            case 'ArrowLeft':
+                mainPlayer.position.x -= 0.5;
+                break;
+            case 'ArrowRight':
+                mainPlayer.position.x += 0.5;
+                break;
+            case 'ArrowUp':
+                mainPlayer.position.z -= 0.5;
+                break;
+            case 'ArrowDown':
+                mainPlayer.position.z += 0.5;
+                break;
+        }
     }
 });
 
 // Simulate ball movement
 let ballDirection = new THREE.Vector3(0.05, 0, -0.05);
 function moveBall() {
+    if (!gameStarted) return;
+
     ball.position.add(ballDirection);
 
     // Ball collision with boundaries
@@ -92,21 +179,64 @@ function moveBall() {
         ballDirection.x *= -1;
     }
 
-    // Ball collision with player or opponent
-    if (ball.position.distanceTo(player.position) < 0.5) {
-        ballDirection.z *= -1;
+    // Ball collision with players
+    players.forEach(player => {
+        if (ball.position.distanceTo(player.position) < 0.7) {
+            ballDirection.z *= -1;
+            ballDirection.x += (Math.random() - 0.5) * 0.1;
+        }
+    });
+
+    // Ball collision with opponents
+    opponents.forEach(opponent => {
+        if (ball.position.distanceTo(opponent.position) < 0.7) {
+            ballDirection.z *= -1;
+            ballDirection.x += (Math.random() - 0.5) * 0.1;
+        }
+    });
+
+    // Check if player or opponent wins the point
+    if (ball.position.z < -5.25) {
+        opponentScore++;
+        rotatePlayers();
+        resetBall();
+    } else if (ball.position.z > 5.25) {
+        playerScore++;
+        rotatePlayers();
+        resetBall();
     }
-    if (ball.position.distanceTo(opponent1.position) < 0.5) {
-        ballDirection.z *= -1;
-    }
+
+    scoreElement.innerHTML = `Player Score: ${playerScore} | Opponent Score: ${opponentScore}`;
+    timerElement.innerHTML = `Time: ${Math.floor((Date.now() - startTime) / 1000)}s`;
 
     requestAnimationFrame(moveBall);
 }
-moveBall();
+
+function resetBall() {
+    ball.position.set(currentCourt * 25, 0.2, 0);
+    ballDirection.set((Math.random() - 0.5) * 0.1, 0, (Math.random() > 0.5 ? -0.05 : 0.05));
+}
+
+// Rotate players
+function rotatePlayers() {
+    if (playerScore % 2 === 0) {
+        currentCourt = (currentCourt + 1) % 3;
+        mainPlayer.position.set(currentCourt * 25, 0.75, -3);
+    }
+}
 
 // Opponent movement
-function moveOpponent() {
-    opponent1.position.x = Math.sin(Date.now() * 0.001) * 3;
-    requestAnimationFrame(moveOpponent);
+function moveOpponents() {
+    if (!gameStarted) return;
+    opponents.forEach((opponent, index) => {
+        opponent.position.x = Math.sin(Date.now() * 0.001 + index) * 3;
+    });
+    requestAnimationFrame(moveOpponents);
 }
-moveOpponent();
+
+// Render loop
+function animate() {
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+}
+animate();
