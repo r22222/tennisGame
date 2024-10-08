@@ -1,27 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tennis Game Prototype</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/physijs/0.0.1/physi.min.js"></script>
-    <script src="tennis.js" defer></script>
-</head>
-<body>
-    <header>
-        <h1>First Person Tennis Game Prototype</h1>
-    </header>
-    <main>
-        <div id="game-container"></div>
-    </main>
-    <footer>
-        <p>Created by Rocky Cowan</p>
-    </footer>
-</body>
-</html>
-
 /* tennis.js */
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
