@@ -26,10 +26,10 @@ for (let i = -25; i <= 25; i += 25) {
     scene.add(court);
 
     // Create net
-    const netGeometry = new THREE.BoxGeometry(0.2, 1.5, 10);
+    const netGeometry = new THREE.BoxGeometry(20, 0.1, 0.5);
     const netMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff }); // White net
     const net = new THREE.Mesh(netGeometry, netMaterial);
-    net.position.set(i, 0.75, 0);
+    net.position.set(i, 0.5, 0);
     scene.add(net);
 
     // Create court lines
@@ -72,15 +72,25 @@ for (let i = -25; i <= 25; i += 25) {
     centerLine.rotation.x = -Math.PI / 2;
     centerLine.position.set(i, 0.01, 0);
     scene.add(centerLine);
+
+    // Doubles alleys
+    const doublesAlleyGeometry = new THREE.PlaneGeometry(lineWidth, 10);
+    const doublesAlleyLeft = new THREE.Mesh(doublesAlleyGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    doublesAlleyLeft.rotation.x = -Math.PI / 2;
+    doublesAlleyLeft.position.set(i - 11, 0.01, 0);
+    scene.add(doublesAlleyLeft);
+    const doublesAlleyRight = doublesAlleyLeft.clone();
+    doublesAlleyRight.position.set(i + 11, 0.01, 0);
+    scene.add(doublesAlleyRight);
 }
 
-// Create players and opponents
+// Create players and opponents (2 vs 2)
 const playerGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
 const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff }); // Blue player
 const players = [];
 for (let i = -25; i <= 25; i += 25) {
     const player = new THREE.Mesh(playerGeometry, playerMaterial);
-    player.position.set(i, 0.75, -3);
+    player.position.set(i - 5, 0.75, -3);
     scene.add(player);
     players.push(player);
 }
@@ -90,7 +100,7 @@ const opponentMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 }); // Re
 const opponents = [];
 for (let i = -25; i <= 25; i += 25) {
     const opponent = new THREE.Mesh(playerGeometry, opponentMaterial);
-    opponent.position.set(i, 0.75, 3);
+    opponent.position.set(i + 5, 0.75, 3);
     scene.add(opponent);
     opponents.push(opponent);
 }
@@ -114,7 +124,7 @@ scene.add(ball);
 
 // Physics for ball
 const gravity = -0.00098;
-let ballVelocity = new THREE.Vector3(0.05, 0, -0.05);
+let ballVelocity = new THREE.Vector3(0.05, 0.1, -0.05);
 let ballSpin = new THREE.Vector3(0.001, 0, 0.001);
 
 // Game state
@@ -163,6 +173,9 @@ window.addEventListener('keydown', (event) => {
             case 'ArrowDown':
                 mainPlayer.position.z += 0.5;
                 break;
+            case 'r': // Reset ball
+                resetBall();
+                break;
         }
     }
 });
@@ -182,7 +195,7 @@ function moveBall() {
     }
 
     // Ball collision with net
-    if (Math.abs(ball.position.x % 25) < 0.1 && Math.abs(ball.position.z) < 0.5 && ball.position.y < 1.5) {
+    if (Math.abs(ball.position.z) < 0.5 && ball.position.y < 1.5) {
         ballVelocity.z *= -0.8;
     }
 
@@ -223,7 +236,7 @@ function moveBall() {
 
 function resetBall() {
     ball.position.set(currentCourt * 25, 0.2, 0);
-    ballVelocity.set((Math.random() - 0.5) * 0.1, 0.05, (Math.random() > 0.5 ? -0.05 : 0.05));
+    ballVelocity.set((Math.random() - 0.5) * 0.1, 0.1, (Math.random() > 0.5 ? -0.05 : 0.05));
     ballSpin.set((Math.random() - 0.5) * 0.01, 0, (Math.random() - 0.5) * 0.01);
 }
 
