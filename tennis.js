@@ -26,7 +26,7 @@ for (let i = -25; i <= 25; i += 25) {
     scene.add(court);
 
     // Create net
-    const netGeometry = new THREE.BoxGeometry(20, 0.2, 0.1);
+    const netGeometry = new THREE.BoxGeometry(0.2, 1.5, 10);
     const netMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff }); // White net
     const net = new THREE.Mesh(netGeometry, netMaterial);
     net.position.set(i, 0.75, 0);
@@ -36,7 +36,7 @@ for (let i = -25; i <= 25; i += 25) {
     const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
     const lineWidth = 0.05;
 
-    // Baseline
+    // Baselines
     const baselineGeometry = new THREE.PlaneGeometry(20, lineWidth);
     const baselineFront = new THREE.Mesh(baselineGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
     baselineFront.rotation.x = -Math.PI / 2;
@@ -58,22 +58,20 @@ for (let i = -25; i <= 25; i += 25) {
 
     // Service lines
     const serviceLineGeometry = new THREE.PlaneGeometry(20, lineWidth);
-    const serviceLine = new THREE.Mesh(serviceLineGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-    serviceLine.rotation.x = -Math.PI / 2;
-    serviceLine.position.set(i, 0.01, 0);
-    scene.add(serviceLine);
-}
+    const serviceLineFront = new THREE.Mesh(serviceLineGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    serviceLineFront.rotation.x = -Math.PI / 2;
+    serviceLineFront.position.set(i, 0.01, 2.5);
+    scene.add(serviceLineFront);
+    const serviceLineBack = serviceLineFront.clone();
+    serviceLineBack.position.set(i, 0.01, -2.5);
+    scene.add(serviceLineBack);
 
-// Create boundaries
-const boundaryMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff });
-for (let i = -25; i <= 25; i += 25) {
-    const backBoundary = new THREE.Mesh(new THREE.BoxGeometry(20.5, 1, 0.5), boundaryMaterial);
-    backBoundary.position.set(i, 0.5, -5.25);
-    scene.add(backBoundary);
-
-    const frontBoundary = new THREE.Mesh(new THREE.BoxGeometry(20.5, 1, 0.5), boundaryMaterial);
-    frontBoundary.position.set(i, 0.5, 5.25);
-    scene.add(frontBoundary);
+    // Center line
+    const centerLineGeometry = new THREE.PlaneGeometry(lineWidth, 5);
+    const centerLine = new THREE.Mesh(centerLineGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    centerLine.rotation.x = -Math.PI / 2;
+    centerLine.position.set(i, 0.01, 0);
+    scene.add(centerLine);
 }
 
 // Create players and opponents
@@ -113,6 +111,11 @@ const ballMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff }); // White 
 const ball = new THREE.Mesh(ballGeometry, ballMaterial);
 ball.position.set(0, 0.2, 0);
 scene.add(ball);
+
+// Physics for ball
+const gravity = -0.00098;
+let ballVelocity = new THREE.Vector3(0.05, 0, -0.05);
+let ballSpin = new THREE.Vector3(0.001, 0, 0.001);
 
 // Game state
 let gameStarted = false;
@@ -165,33 +168,39 @@ window.addEventListener('keydown', (event) => {
 });
 
 // Simulate ball movement
-let ballDirection = new THREE.Vector3(0.05, 0, -0.05);
 function moveBall() {
     if (!gameStarted) return;
 
-    ball.position.add(ballDirection);
+    ballVelocity.y += gravity;
+    ball.position.add(ballVelocity);
+    ball.position.add(ballSpin);
 
-    // Ball collision with boundaries
-    if (ball.position.z <= -5 || ball.position.z >= 5) {
-        ballDirection.z *= -1;
+    // Ball collision with ground
+    if (ball.position.y <= 0.2) {
+        ball.position.y = 0.2;
+        ballVelocity.y *= -0.6; // Bounce with some energy loss
     }
-    if (ball.position.x <= -10 || ball.position.x >= 10) {
-        ballDirection.x *= -1;
+
+    // Ball collision with net
+    if (Math.abs(ball.position.x % 25) < 0.1 && Math.abs(ball.position.z) < 0.5 && ball.position.y < 1.5) {
+        ballVelocity.z *= -0.8;
     }
 
     // Ball collision with players
     players.forEach(player => {
         if (ball.position.distanceTo(player.position) < 0.7) {
-            ballDirection.z *= -1;
-            ballDirection.x += (Math.random() - 0.5) * 0.1;
+            ballVelocity.z *= -1;
+            ballVelocity.x += (Math.random() - 0.5) * 0.1;
+            ballSpin.x += (Math.random() - 0.5) * 0.01;
         }
     });
 
     // Ball collision with opponents
     opponents.forEach(opponent => {
         if (ball.position.distanceTo(opponent.position) < 0.7) {
-            ballDirection.z *= -1;
-            ballDirection.x += (Math.random() - 0.5) * 0.1;
+            ballVelocity.z *= -1;
+            ballVelocity.x += (Math.random() - 0.5) * 0.1;
+            ballSpin.x += (Math.random() - 0.5) * 0.01;
         }
     });
 
@@ -214,7 +223,8 @@ function moveBall() {
 
 function resetBall() {
     ball.position.set(currentCourt * 25, 0.2, 0);
-    ballDirection.set((Math.random() - 0.5) * 0.1, 0, (Math.random() > 0.5 ? -0.05 : 0.05));
+    ballVelocity.set((Math.random() - 0.5) * 0.1, 0.05, (Math.random() > 0.5 ? -0.05 : 0.05));
+    ballSpin.set((Math.random() - 0.5) * 0.01, 0, (Math.random() - 0.5) * 0.01);
 }
 
 // Rotate players
