@@ -1,265 +1,392 @@
 /* tennis.js */
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.getElementById("game-container").appendChild(renderer.domElement);
+class TennisCourt {
+    constructor(scene, positionX, width = 40, length = 20) {
+        this.scene = scene;
+        this.width = width;
+        this.length = length;
+        this.positionX = positionX;
+        this.material = new THREE.MeshPhongMaterial({ color: 0x228b22 });
+        this.lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        this.createCourt();
+        this.createNet();
+        this.createLines();
+    }
 
-// Camera position
-camera.position.set(0, 10, 20);
-camera.lookAt(0, 0, 0);
+    createCourt() {
+        const courtGeometry = new THREE.PlaneGeometry(this.width, this.length);
+        const court = new THREE.Mesh(courtGeometry, this.material);
+        court.rotation.x = -Math.PI / 2;
+        court.position.set(this.positionX, 0, 0);
+        this.scene.add(court);
+    }
 
-// Lighting
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-scene.add(ambientLight);
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-directionalLight.position.set(10, 20, 10);
-scene.add(directionalLight);
+    createNet() {
+        const netGeometry = new THREE.BoxGeometry(this.width, 1.5, 0.05);
+        const netMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff, opacity: 0.5, transparent: true });
+        const net = new THREE.Mesh(netGeometry, netMaterial);
+        net.position.set(this.positionX, 0.75, 0);
+        this.scene.add(net);
+    }
 
-// Create courts
-const courtMaterial = new THREE.MeshPhongMaterial({ color: 0x228b22 }); // Green court
-for (let i = -25; i <= 25; i += 25) {
-    const courtGeometry = new THREE.PlaneGeometry(20, 10);
-    const court = new THREE.Mesh(courtGeometry, courtMaterial);
-    court.rotation.x = -Math.PI / 2;
-    court.position.set(i, 0, 0);
-    scene.add(court);
+    createLines() {
+        const lineWidth = 0.05;
 
-    // Create net
-    const netGeometry = new THREE.BoxGeometry(20, 0.1, 0.5);
-    const netMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff }); // White net
-    const net = new THREE.Mesh(netGeometry, netMaterial);
-    net.position.set(i, 0.5, 0);
-    scene.add(net);
+        // Baselines
+        this.createLine(this.width, lineWidth, this.positionX, 0.01, this.length / 2);
+        this.createLine(this.width, lineWidth, this.positionX, 0.01, -this.length / 2);
 
-    // Create court lines
-    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
-    const lineWidth = 0.05;
+        // Sidelines
+        this.createLine(lineWidth, this.length, this.positionX - this.width / 2, 0.01, 0);
+        this.createLine(lineWidth, this.length, this.positionX + this.width / 2, 0.01, 0);
 
-    // Baselines
-    const baselineGeometry = new THREE.PlaneGeometry(20, lineWidth);
-    const baselineFront = new THREE.Mesh(baselineGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-    baselineFront.rotation.x = -Math.PI / 2;
-    baselineFront.position.set(i, 0.01, 5);
-    scene.add(baselineFront);
-    const baselineBack = baselineFront.clone();
-    baselineBack.position.set(i, 0.01, -5);
-    scene.add(baselineBack);
+        // Service lines
+        this.createLine(this.width * 0.75, lineWidth, this.positionX, 0.01, this.length / 4);
+        this.createLine(this.width * 0.75, lineWidth, this.positionX, 0.01, -this.length / 4);
 
-    // Sidelines
-    const sidelineGeometry = new THREE.PlaneGeometry(lineWidth, 10);
-    const sidelineLeft = new THREE.Mesh(sidelineGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-    sidelineLeft.rotation.x = -Math.PI / 2;
-    sidelineLeft.position.set(i - 10, 0.01, 0);
-    scene.add(sidelineLeft);
-    const sidelineRight = sidelineLeft.clone();
-    sidelineRight.position.set(i + 10, 0.01, 0);
-    scene.add(sidelineRight);
+        // Center line
+        this.createLine(lineWidth, this.length / 2, this.positionX, 0.01, 0);
 
-    // Service lines
-    const serviceLineGeometry = new THREE.PlaneGeometry(20, lineWidth);
-    const serviceLineFront = new THREE.Mesh(serviceLineGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-    serviceLineFront.rotation.x = -Math.PI / 2;
-    serviceLineFront.position.set(i, 0.01, 2.5);
-    scene.add(serviceLineFront);
-    const serviceLineBack = serviceLineFront.clone();
-    serviceLineBack.position.set(i, 0.01, -2.5);
-    scene.add(serviceLineBack);
+        // Doubles alleys
+        this.createLine(lineWidth, this.length, this.positionX - (this.width / 2) + 5, 0.01, 0);
+        this.createLine(lineWidth, this.length, this.positionX + (this.width / 2) - 5, 0.01, 0);
+    }
 
-    // Center line
-    const centerLineGeometry = new THREE.PlaneGeometry(lineWidth, 5);
-    const centerLine = new THREE.Mesh(centerLineGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-    centerLine.rotation.x = -Math.PI / 2;
-    centerLine.position.set(i, 0.01, 0);
-    scene.add(centerLine);
-
-    // Doubles alleys
-    const doublesAlleyGeometry = new THREE.PlaneGeometry(lineWidth, 10);
-    const doublesAlleyLeft = new THREE.Mesh(doublesAlleyGeometry, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-    doublesAlleyLeft.rotation.x = -Math.PI / 2;
-    doublesAlleyLeft.position.set(i - 11, 0.01, 0);
-    scene.add(doublesAlleyLeft);
-    const doublesAlleyRight = doublesAlleyLeft.clone();
-    doublesAlleyRight.position.set(i + 11, 0.01, 0);
-    scene.add(doublesAlleyRight);
+    createLine(width, length, posX, posY, posZ) {
+        const lineGeometry = new THREE.PlaneGeometry(width, length);
+        const line = new THREE.Mesh(lineGeometry, this.lineMaterial);
+        line.rotation.x = -Math.PI / 2;
+        line.position.set(posX, posY, posZ);
+        this.scene.add(line);
+    }
 }
 
-// Create players and opponents (2 vs 2)
-const playerGeometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
-const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff }); // Blue player
-const players = [];
-for (let i = -25; i <= 25; i += 25) {
-    const player = new THREE.Mesh(playerGeometry, playerMaterial);
-    player.position.set(i - 5, 0.75, -3);
-    scene.add(player);
-    players.push(player);
-}
-const mainPlayer = players[1]; // Controlled by user
+class Player {
+    constructor(scene, color, xPos, zPos, controlledByUser = false) {
+        this.scene = scene;
+        this.controlledByUser = controlledByUser;
+        const geometry = new THREE.BoxGeometry(0.5, 1.5, 0.5);
+        const material = new THREE.MeshPhongMaterial({ color });
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.position.set(xPos, 0.75, zPos);
+        this.scene.add(this.mesh);
+    }
 
-const opponentMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 }); // Red opponent
-const opponents = [];
-for (let i = -25; i <= 25; i += 25) {
-    const opponent = new THREE.Mesh(playerGeometry, opponentMaterial);
-    opponent.position.set(i + 5, 0.75, 3);
-    scene.add(opponent);
-    opponents.push(opponent);
-}
+    move(dx, dz) {
+        this.mesh.position.x += dx;
+        this.mesh.position.z += dz;
+    }
 
-// Create pros (static position)
-const proMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00 }); // Yellow pro
-const pros = [];
-for (let i = -25; i <= 25; i += 25) {
-    const pro = new THREE.Mesh(playerGeometry, proMaterial);
-    pro.position.set(i, 0.75, 5);
-    scene.add(pro);
-    pros.push(pro);
+    resetPosition(x, z) {
+        this.mesh.position.set(x, 0.75, z);
+    }
 }
 
-// Create ball
-const ballGeometry = new THREE.SphereGeometry(0.2, 32, 32);
-const ballMaterial = new THREE.MeshPhongMaterial({ color: 0xffffff }); // White ball
-const ball = new THREE.Mesh(ballGeometry, ballMaterial);
-ball.position.set(0, 0.2, 0);
-scene.add(ball);
+class Ball {
+    constructor(scene) {
+        const ballGeometry = new THREE.SphereGeometry(0.2, 32, 32);
+        const ballMaterial = new THREE.MeshPhongMaterial({ color: 0xffff00 });
+        this.mesh = new THREE.Mesh(ballGeometry, ballMaterial);
+        this.velocity = new THREE.Vector3(0, 0, 0);
+        this.scene = scene;
+        this.scene.add(this.mesh);
+        this.netHitCooldown = false; // Prevent multiple net hits in quick succession
+    }
 
-// Physics for ball
-const gravity = -0.00098;
-let ballVelocity = new THREE.Vector3(0.05, 0.1, -0.05);
-let ballSpin = new THREE.Vector3(0.001, 0, 0.001);
+    resetPosition(player) {
+        this.mesh.position.set(player.mesh.position.x, player.mesh.position.y + 1.0, player.mesh.position.z - 1);
+        this.velocity.set(0, 0, 0);
+        this.netHitCooldown = false; // Reset net cooldown on ball reset
+        console.log("Ball reset: Position:", this.mesh.position);
+    }
 
-// Game state
-let gameStarted = false;
-let playerScore = 0;
-let opponentScore = 0;
-let currentCourt = 1;
+    move(gravity, bounceFactor, groundFriction, courtLength, courtWidth, handleBallOut) {
+        // Apply gravity to the ball's vertical velocity
+        this.velocity.y += gravity;
+        this.mesh.position.add(this.velocity);
 
-// Display score and timer
-const scoreElement = document.createElement('div');
-scoreElement.style.position = 'absolute';
-scoreElement.style.top = '10px';
-scoreElement.style.left = '10px';
-scoreElement.style.color = 'white';
-document.body.appendChild(scoreElement);
+        // Log the ball's position and velocity at every step
+        console.log(`Position: (${this.mesh.position.x}, ${this.mesh.position.y}, ${this.mesh.position.z})`);
+        console.log(`Velocity: (${this.velocity.x}, ${this.velocity.y}, ${this.velocity.z})`);
 
-const timerElement = document.createElement('div');
-timerElement.style.position = 'absolute';
-timerElement.style.top = '40px';
-timerElement.style.left = '10px';
-timerElement.style.color = 'white';
-document.body.appendChild(timerElement);
+        // Bounce off the ground if the ball hits it
+        if (this.mesh.position.y <= 0.2) {
+            console.log("Ball hit the ground!");
 
-let startTime = Date.now();
+            // Check if the ball bounced out of bounds
+            if (this.isBallOutOfBounds(courtLength, courtWidth)) {
+                console.log("Ball bounced out of bounds. Ending point.");
+                handleBallOut();
+            } else {
+                // Bounce the ball if it is in bounds
+                if (Math.abs(this.velocity.y) > 0.1) {
+                    this.velocity.y = -this.velocity.y * bounceFactor; // Invert and reduce velocity on bounce
+                    console.log(`Bouncing with velocity: ${this.velocity.y}`);
+                } else {
+                    // Hard stop if velocity is too low to bounce
+                    this.velocity.set(0, 0, 0); // Stop all motion (x, y, z)
+                    console.log("Stopping all motion, ball settled");
+                    this.mesh.position.set(this.mesh.position.x, 0.2, this.mesh.position.z); // Fix the ball on the ground
+                }
+            }
 
-// Press any key to start
-window.addEventListener('keydown', (event) => {
-    if (!gameStarted) {
-        gameStarted = true;
-        moveBall();
-        moveOpponents();
-        document.getElementById("game-container").focus();
-        startTime = Date.now();
-    } else {
-        // Handle player movement
-        switch (event.key) {
-            case 'ArrowLeft':
-                mainPlayer.position.x -= 0.5;
-                break;
-            case 'ArrowRight':
-                mainPlayer.position.x += 0.5;
-                break;
-            case 'ArrowUp':
-                mainPlayer.position.z -= 0.5;
-                break;
-            case 'ArrowDown':
-                mainPlayer.position.z += 0.5;
-                break;
-            case 'r': // Reset ball
-                resetBall();
-                break;
+            // Apply friction to horizontal movement
+            this.velocity.x *= groundFriction; 
+            this.velocity.z *= groundFriction;
+        }
+
+        // Handle net collision only if the ball is low enough and within net z-boundaries
+        if (!this.netHitCooldown && this.mesh.position.z >= -0.05 && this.mesh.position.z <= 0.05) {
+            if (this.mesh.position.y <= 1.5) { // Net height
+                console.log("Ball hit the net! Reflecting.");
+                this.velocity.z = -this.velocity.z * 0.5; // Reflect z-velocity when hitting the net
+                this.velocity.x *= 0.9; // Slightly reduce x-velocity for energy loss
+                this.netHitCooldown = true; // Cooldown to prevent continuous net collisions
+                setTimeout(() => {
+                    this.netHitCooldown = false; // Reset cooldown after 500ms
+                }, 500);
+            }
+        }
+
+        // Ensure gravity keeps pulling the ball down after crossing the net
+        if (this.mesh.position.y > 1.5 && this.mesh.position.z > 0) {
+            console.log("Applying gravity to pull ball down.");
+            this.velocity.y += gravity; // Keep applying gravity after clearing the net
         }
     }
-});
 
-// Simulate ball movement
-function moveBall() {
-    if (!gameStarted) return;
-
-    ballVelocity.y += gravity;
-    ball.position.add(ballVelocity);
-    ball.position.add(ballSpin);
-
-    // Ball collision with ground
-    if (ball.position.y <= 0.2) {
-        ball.position.y = 0.2;
-        ballVelocity.y *= -0.6; // Bounce with some energy loss
+    // New function to check if the ball bounced out of bounds
+    isBallOutOfBounds(courtLength, courtWidth) {
+        // Check if the ball's x or z position is outside the court after it has hit the ground
+        return (
+            this.mesh.position.z <= -courtLength / 2 || this.mesh.position.z >= courtLength / 2 ||
+            this.mesh.position.x <= -courtWidth / 2 || this.mesh.position.x >= courtWidth / 2
+        );
     }
 
-    // Ball collision with net
-    if (Math.abs(ball.position.z) < 0.5 && ball.position.y < 1.5) {
-        ballVelocity.z *= -0.8;
+    hit(direction, speed) {
+        this.velocity.copy(direction).multiplyScalar(speed);
+        console.log(`Ball hit! Velocity set to: (${this.velocity.x}, ${this.velocity.y}, ${this.velocity.z})`);
     }
+}
 
-    // Ball collision with players
-    players.forEach(player => {
-        if (ball.position.distanceTo(player.position) < 0.7) {
-            ballVelocity.z *= -1;
-            ballVelocity.x += (Math.random() - 0.5) * 0.1;
-            ballSpin.x += (Math.random() - 0.5) * 0.01;
+class TennisGame {
+    constructor() {
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById("game-container").appendChild(this.renderer.domElement);
+
+        // Set up camera
+        this.camera.position.set(0, 10, 20);
+        this.camera.lookAt(0, 0, 0);
+
+        // Add lighting
+        this.addLighting();
+
+        // Create courts
+        this.courts = [];
+        for (let i = -50; i <= 50; i += 50) {
+            this.courts.push(new TennisCourt(this.scene, i));
         }
-    });
 
-    // Ball collision with opponents
-    opponents.forEach(opponent => {
-        if (ball.position.distanceTo(opponent.position) < 0.7) {
-            ballVelocity.z *= -1;
-            ballVelocity.x += (Math.random() - 0.5) * 0.1;
-            ballSpin.x += (Math.random() - 0.5) * 0.01;
+        // Create players and ball
+        this.initializePlayersAndBall();
+
+        // Global game variables
+        this.isBallInMotion = false;
+        this.gravity = -0.005;
+        this.bounceFactor = 1.5;
+        this.groundFriction = 0.995;
+        this.opponentSpeed = 1.1;
+        this.playerSpeed = 1.1;
+
+        // Add UI elements
+        this.createUI();
+
+        // Add event listeners for player control
+        this.addEventListeners();
+
+        // Start animation loop
+        this.animate();
+    }
+
+    addLighting() {
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        this.scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 20, 10);
+        this.scene.add(directionalLight);
+    }
+
+    initializePlayersAndBall() {
+        this.player = new Player(this.scene, 0x0000ff, -4, -2, true);
+        this.opponent1 = new Player(this.scene, 0xff0000, -5, 9);
+        this.opponent2 = new Player(this.scene, 0xff0000, 5, 9);
+        this.pro = new Player(this.scene, 0xffff00, 4, -2);
+        this.ball = new Ball(this.scene);
+        this.ball.mesh.position.set(-4, 0.2, -2);
+    }
+
+    createUI() {
+        const startButton = document.createElement("button");
+        startButton.innerHTML = "Start";
+        startButton.onclick = () => this.countDownAndServe();
+        startButton.style.position = "absolute";
+        startButton.style.top = "20%";
+        startButton.style.left = "50%";
+        startButton.style.transform = "translate(-50%, -50%)";
+        document.body.appendChild(startButton);
+
+        const countdownDiv = document.createElement("div");
+        countdownDiv.style.position = "absolute";
+        countdownDiv.style.width = "100%";
+        countdownDiv.style.textAlign = "center";
+        countdownDiv.style.top = "40%";
+        countdownDiv.style.fontSize = "36px";
+        countdownDiv.style.color = "white";
+        this.countdownDiv = countdownDiv;
+        document.body.appendChild(this.countdownDiv);
+    }
+
+    addEventListeners() {
+        window.addEventListener('keydown', (event) => {
+            switch (event.key) {
+                case 'ArrowUp':
+                    this.player.move(0, -this.playerSpeed);
+                    break;
+                case 'ArrowDown':
+                    this.player.move(0, this.playerSpeed);
+                    break;
+                case 'ArrowLeft':
+                    this.player.move(-this.playerSpeed, 0);
+                    break;
+                case 'ArrowRight':
+                    this.player.move(this.playerSpeed, 0);
+                    break;
+                case ' ':
+                    if (!this.isBallInMotion) {
+                        const direction = new THREE.Vector3(0, 0.1, -1).normalize();
+                        this.ball.hit(direction, 0.4); // Adjust ball serve speed here
+                        this.isBallInMotion = true;
+                    }
+                    break;
+            }
+        });
+    }
+
+    countDownAndServe() {
+        let countdown = 3;
+        this.countdownDiv.innerHTML = countdown;
+    
+        const interval = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+                this.countdownDiv.innerHTML = countdown;
+            } else {
+                this.countdownDiv.innerHTML = "Go!";
+                clearInterval(interval);
+                setTimeout(() => {
+                    if (!this.isBallInMotion) {
+                        this.ball.resetPosition(this.pro);
+    
+                        const randomX = (Math.random() - 0.5) * 0.5; // Horizontal randomness
+                        const serveVelocity = new THREE.Vector3(randomX, 0.5, 1).normalize(); // Increase the y-component
+                        this.ball.hit(serveVelocity, 0.2); // Serve speed with more height to clear net
+                        this.isBallInMotion = true;
+                    }
+                }, 1000);
+            }
+        }, 1000);
+    }
+
+    // New method to predict ball's future position to help opponent anticipate movement
+    anticipateBallPosition() {
+        const timeToReach = Math.abs((this.opponent1.mesh.position.z - this.ball.mesh.position.z) / this.ball.velocity.z);
+        const futureX = this.ball.mesh.position.x + this.ball.velocity.x * timeToReach;
+        return futureX;
+    }
+
+    moveOpponent() {
+    if (this.isBallInMotion) {
+        [this.opponent1, this.opponent2].forEach((opponent, index) => {
+            const leftBoundary = index === 0 ? -10 : 0;
+            const rightBoundary = index === 0 ? 0 : 10;
+            const centralPositionX = index === 0 ? -5 : 5;  // Set the opponent's central position (starting X position)
+            const centralPositionZ = 8; // Set the opponent's central Z position
+
+            // Check if the opponent has hit the ball already (limit to one hit per turn)
+            if (!opponent.hasHitBall) {
+                const predictedX = this.anticipateBallPosition();
+                const predictedZ = this.ball.mesh.position.z;
+
+                const distanceToBall = this.ball.mesh.position.distanceTo(opponent.mesh.position);
+                const speedMultiplier = distanceToBall > 5 ? 1.5 : 1;  // Move faster if further from the ball
+
+                // Move left or right to follow the ball on the x-axis
+                if (predictedX < opponent.mesh.position.x && opponent.mesh.position.x > leftBoundary) {
+                    opponent.move(-this.opponentSpeed * speedMultiplier, 0);
+                } else if (predictedX > opponent.mesh.position.x && opponent.mesh.position.x < rightBoundary) {
+                    opponent.move(this.opponentSpeed * speedMultiplier, 0);
+                }
+
+                // Move forwards or backwards to follow the ball on the z-axis
+                if (predictedZ < opponent.mesh.position.z) {
+                    opponent.move(0, -this.opponentSpeed * speedMultiplier);
+                } else if (predictedZ > opponent.mesh.position.z) {
+                    opponent.move(0, this.opponentSpeed * speedMultiplier);
+                }
+
+                // Check if opponent is close enough to hit the ball
+                if (this.detectCollision(this.ball, opponent)) {
+                    const randomX = (Math.random() - 0.5) * 0.5;
+                    const returnVelocity = new THREE.Vector3(randomX, 0.3, -1).normalize();
+                    this.ball.hit(returnVelocity, 0.3);
+                    console.log("Opponent hit the ball!");
+
+                    // Mark that the opponent has hit the ball, preventing further hits until the next turn
+                    opponent.hasHitBall = true;
+                }
+            } else {
+                // Move the opponent back to their starting central position after hitting the ball
+                const moveBackSpeed = 0.02; // Speed for moving back to the central position
+                const deltaX = centralPositionX - opponent.mesh.position.x;
+                const deltaZ = centralPositionZ - opponent.mesh.position.z;
+
+                // Move back towards the central position (x-axis)
+                if (Math.abs(deltaX) > 0.1) {
+                    opponent.move(Math.sign(deltaX) * moveBackSpeed, 0);
+                }
+
+                // Move back towards the central position (z-axis)
+                if (Math.abs(deltaZ) > 0.1) {
+                    opponent.move(0, Math.sign(deltaZ) * moveBackSpeed);
+                }
+            }
+        });
+    }
+}
+
+    detectCollision(object1, object2, threshold = 0.7) { // Increased threshold for better hitting accuracy
+        const distance = object1.mesh.position.distanceTo(object2.mesh.position);
+        return distance < threshold;
+    }
+
+    handleBallOut() {
+        this.isBallInMotion = false;
+        setTimeout(() => {
+            this.countDownAndServe();
+        }, 2000);
+    }
+
+    animate() {
+        requestAnimationFrame(() => this.animate());
+        if (this.isBallInMotion) {
+            this.ball.move(this.gravity, this.bounceFactor, this.groundFriction, this.courts[0].length, this.courts[0].width, this.handleBallOut.bind(this));
+            this.moveOpponent();
         }
-    });
-
-    // Check if player or opponent wins the point
-    if (ball.position.z < -5.25) {
-        opponentScore++;
-        rotatePlayers();
-        resetBall();
-    } else if (ball.position.z > 5.25) {
-        playerScore++;
-        rotatePlayers();
-        resetBall();
-    }
-
-    scoreElement.innerHTML = `Player Score: ${playerScore} | Opponent Score: ${opponentScore}`;
-    timerElement.innerHTML = `Time: ${Math.floor((Date.now() - startTime) / 1000)}s`;
-
-    requestAnimationFrame(moveBall);
-}
-
-function resetBall() {
-    ball.position.set(currentCourt * 25, 0.2, 0);
-    ballVelocity.set((Math.random() - 0.5) * 0.1, 0.1, (Math.random() > 0.5 ? -0.05 : 0.05));
-    ballSpin.set((Math.random() - 0.5) * 0.01, 0, (Math.random() - 0.5) * 0.01);
-}
-
-// Rotate players
-function rotatePlayers() {
-    if (playerScore % 2 === 0) {
-        currentCourt = (currentCourt + 1) % 3;
-        mainPlayer.position.set(currentCourt * 25, 0.75, -3);
+        this.renderer.render(this.scene, this.camera);
     }
 }
 
-// Opponent movement
-function moveOpponents() {
-    if (!gameStarted) return;
-    opponents.forEach((opponent, index) => {
-        opponent.position.x = Math.sin(Date.now() * 0.001 + index) * 3;
-    });
-    requestAnimationFrame(moveOpponents);
-}
-
-// Render loop
-function animate() {
-    requestAnimationFrame(animate);
-    renderer.render(scene, camera);
-}
-animate();
+const game = new TennisGame();
